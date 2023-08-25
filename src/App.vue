@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, computed, ref } from "vue";
 import { useWindowSize } from "@vueuse/core";
+import draggable from "vuedraggable";
 const container = reactive({
   width: 1800,
   height: 1800,
@@ -10,67 +11,38 @@ const container = reactive({
   },
 });
 
-let isMove = ref(false);
-let clickPoint = {
-  x: 0,
-  y: 0,
-};
-
-function conDown(e: MouseEvent) {
-  isMove.value = true;
-  clickPoint.x = e.clientX - container.transform.translate.x;
-  clickPoint.y = e.clientY - container.transform.translate.y;
-}
-function conUp() {
-  isMove.value = false;
-}
 function conMove(e: MouseEvent) {
-  if (isMove.value) {
-    let x = (clickPoint.x - e.clientX) * -1;
-    if (x >= 0) {
-      x = 0;
-    }
-    let y = (clickPoint.y - e.clientY) * -1;
-    if (y >= 0) {
-      y = 0;
-    }
-    container.transform.translate.x = x;
-    container.transform.translate.y = y;
-  }
+  // console.log(e);
 }
 
-let { width: winWidth, height: winHeight } = useWindowSize();
-const style = computed(() => {
-  let panelPosY = winHeight.value + Math.abs(container.transform.translate.y);
-  let panelPosX = winWidth.value + Math.abs(container.transform.translate.x);
-  if (panelPosY >= container.height) {
-    container.transform.translate.y =
-      (container.height - winHeight.value - 1) * -1;
-  }
-  if (panelPosX >= container.width) {
-    container.transform.translate.x =
-      (container.width - winWidth.value - 1) * -1;
-  }
-  return `
-  width:${container.width}px;
-  height:${container.height}px;
-  transform: 
-    translate(${container.transform.translate.x}px, ${container.transform.translate.y}px) 
-    scale(${container.transform.scale})`;
-});
-
+type Hosue = {
+  title: string;
+};
+let houseList: Hosue[] = reactive([
+  {
+    title: "房1",
+  },
+  {
+    title: "房2",
+  },
+  {
+    title: "房3",
+  },
+]);
 // 生成格子
 // 格子宽度
-const gridWidth = 100;
+const gridWidth = 110;
 // 格子高度
-const gridHeight = 100;
+const gridHeight = 90;
 const grids: {
+  id: string;
   ring: number;
   num: number;
   px: number;
   py: number;
-}[] = [];
-// 根据圈数生成grid 4 12
+  houses: Hosue[];
+}[] = reactive([]);
+// 根据圈数生成grid
 function createdGrids(num: number) {
   for (let i = 0; i < num; i++) {
     let gridNum = i * 4 * 2 + 4;
@@ -101,10 +73,12 @@ function createdGrids(num: number) {
         }
       }
       let grid = {
+        id: i + "-" + j + 1,
         ring: i,
         num: j + 1,
         px: x,
         py: y,
+        houses: [],
       };
       grids.push(grid);
       old = grid;
@@ -112,31 +86,95 @@ function createdGrids(num: number) {
   }
 }
 createdGrids(7);
+
+const onEnd = (e) => {
+  console.log(e);
+};
 </script>
 
 <template>
   <div class="panel">
-    <div class="box" @mousedown="conDown" @mouseup="conUp" @mousemove="conMove">
-      <div
-        class="place"
+    <draggable
+      class="houses"
+      :list="houseList"
+      :group="{
+        name: 'house',
+        pull: 'clone',
+        put: false,
+        sort: false,
+      }"
+      itemKey="title"
+      @end="onEnd"
+    >
+      <template #item="{ element }">
+        <div class="house">{{ element.title }}</div>
+      </template>
+    </draggable>
+    <div class="box" @mousemove="conMove">
+      <draggable
         v-for="grid in grids"
+        :group="{
+          name: 'house',
+          pull: false,
+          put: true,
+          sort: false,
+        }"
+        :disabled="grid.houses.length > 0 || grid.ring == 0"
+        class="place"
+        :list="grid.houses"
         :style="{
           width: gridWidth + 'px',
           height: gridHeight + 'px',
           left: grid.px + 'px',
           top: grid.py + 'px',
         }"
-      ></div>
-      <div class="center">能量核心</div>
+        @end="onEnd"
+        itemKey="id"
+      >
+        <template #item="{ element }">
+          <div class="house">{{ element.title }}</div>
+        </template>
+      </draggable>
+      <div
+        class="center"
+        :style="{ width: gridWidth * 2 + 'px', height: gridHeight * 2 + 'px' }"
+      >
+        能量核心
+      </div>
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
+.house {
+  flex-shrink: 0;
+  width: 100px;
+  height: 80px;
+  border-radius: 10px;
+  border: 2px solid #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin: 5px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.3s;
+  overflow: hidden;
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
 .panel {
   width: 100vw;
   height: 100vh;
   // overflow: hidden;
+  .houses {
+    display: flex;
+    margin-left: 50%;
+    transform: translateX(-30%);
+    color: red;
+  }
   .box {
     height: 100vh;
     transform: translate(46%, 68%);
@@ -150,19 +188,23 @@ createdGrids(7);
       flex-shrink: 0;
       box-sizing: border-box;
       user-select: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: yellow;
     }
   }
   .center {
     position: absolute;
-    width: 200px;
-    height: 200px;
     border: 5px solid rgba(255, 181, 62, 0.8);
-    border-radius: 50%;
-    text-align: center;
-    line-height: 185px;
+    border-radius: 10px;
     font-weight: bold;
     box-sizing: border-box;
     transition: all 0.4s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 181, 62, 0.1);
     &::before {
       content: "";
       display: block;
@@ -171,18 +213,19 @@ createdGrids(7);
       position: absolute;
       left: 50%;
       top: 50%;
-      border-radius: 50%;
+      border-radius: 10px;
       transform: translate(-50%, -50%);
       transition: all 0.3s;
-      border: 2px solid rgba(255, 181, 62, 0.1);
+      border: 2px solid rgba(255, 181, 62, 0.3);
+      background-color: rgba(255, 181, 62, 0.1);
     }
     &:hover {
-      box-shadow: 0px 0px 100px 0px rgba(255, 181, 62, 1);
-
+      box-shadow: 0px 0px 400px 0px rgba(255, 181, 62, 1);
+      background-color: rgba(255, 181, 62, 0.3);
       &::before {
         content: "";
-        width: 200%;
-        height: 200%;
+        width: 420%;
+        height: 420%;
       }
     }
   }
