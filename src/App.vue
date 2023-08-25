@@ -64,128 +64,6 @@ const style = computed(() => {
 const gridWidth = 100;
 // 格子高度
 const gridHeight = 100;
-// 格子数量
-const gridCount =
-  (container.width / gridWidth) * (container.height / gridHeight);
-
-// 寻找四个中心点
-const centerPoint = [
-  {
-    x: container.width / 2 / gridWidth - 1,
-    y: container.height / 2 / gridHeight - 1,
-  },
-  {
-    x: container.width / 2 / gridWidth - 1 + 1,
-    y: container.height / 2 / gridHeight - 1,
-  },
-  {
-    x: container.width / 2 / gridWidth - 1,
-    y: container.height / 2 / gridHeight - 1 + 1,
-  },
-  {
-    x: container.width / 2 / gridWidth - 1 + 1,
-    y: container.height / 2 / gridHeight - 1 + 1,
-  },
-];
-
-const gridText = [
-  {
-    ring: 0,
-    num: 1,
-    px: 0,
-    py: 0,
-  },
-  {
-    ring: 0,
-    num: 2,
-    px: 100,
-    py: 0,
-  },
-  {
-    ring: 0,
-    num: 3,
-    px: 0,
-    py: 100,
-  },
-  {
-    ring: 0,
-    num: 4,
-    px: 100,
-    py: 100,
-  },
-  {
-    ring: 1,
-    num: 1,
-    px: -100,
-    py: -100,
-  },
-  {
-    ring: 1,
-    num: 2,
-    px: 0,
-    py: -100,
-  },
-  {
-    ring: 1,
-    num: 3,
-    px: 100,
-    py: -100,
-  },
-  {
-    ring: 1,
-    num: 4,
-    px: 200,
-    py: -100,
-  },
-  {
-    ring: 1,
-    num: 5,
-    px: 200,
-    py: 0,
-  },
-  {
-    ring: 1,
-    num: 6,
-    px: 200,
-    py: 100,
-  },
-  {
-    ring: 1,
-    num: 7,
-    px: 200,
-    py: 200,
-  },
-  {
-    ring: 1,
-    num: 8,
-    px: 100,
-    py: 200,
-  },
-  {
-    ring: 1,
-    num: 9,
-    px: 0,
-    py: 200,
-  },
-  {
-    ring: 1,
-    num: 10,
-    px: -100,
-    py: 200,
-  },
-  {
-    ring: 1,
-    num: 11,
-    px: -100,
-    py: 100,
-  },
-  {
-    ring: 1,
-    num: 12,
-    px: -100,
-    py: 0,
-  },
-];
 const grids: {
   ring: number;
   num: number;
@@ -196,27 +74,30 @@ const grids: {
 function createdGrids(num: number) {
   for (let i = 0; i < num; i++) {
     let gridNum = i * 4 * 2 + 4;
-    // if (i == 1) {
-    //   gridNum = 4;
-    // }
     let old = null;
+    let type = 1;
     for (let j = 0; j < gridNum; j++) {
-      console.log(old);
       let x = 0;
       let y = 0;
       if (!old) {
         x = (i + 1) * gridWidth * -1 + gridWidth;
         y = (i + 1) * gridHeight * -1 + gridHeight;
       } else {
-        x = old.px + gridWidth;
-        y = old.py;
-        if (j % (2 * (i + 1)) === 0) {
+        if (type === 1) {
+          x = old.px + gridWidth;
+          y = old.py;
+        } else if (type === 2) {
           x = old.px;
           y = old.py + gridHeight;
-        }
-        if (j % (gridNum - 1) === 0) {
+        } else if (type === 3) {
           x = old.px - gridWidth;
           y = old.py;
+        } else if (type === 4) {
+          x = old.px;
+          y = old.py - gridHeight;
+        }
+        if (j % (1 * (i + (i + 1))) === 0) {
+          type++;
         }
       }
       let grid = {
@@ -229,9 +110,8 @@ function createdGrids(num: number) {
       old = grid;
     }
   }
-  console.log(grids);
 }
-createdGrids(2);
+createdGrids(7);
 </script>
 
 <template>
@@ -246,9 +126,7 @@ createdGrids(2);
           left: grid.px + 'px',
           top: grid.py + 'px',
         }"
-      >
-        {{ grid.ring }}-{{ grid.num }}
-      </div>
+      ></div>
       <div class="center">能量核心</div>
     </div>
   </div>
@@ -258,15 +136,17 @@ createdGrids(2);
 .panel {
   width: 100vw;
   height: 100vh;
-  overflow: hidden;
+  // overflow: hidden;
   .box {
     height: 100vh;
-    transform: translate(30%, 30%);
+    transform: translate(46%, 68%);
+    margin-left: 500px;
+    margin: auto;
     position: relative;
     .place {
       position: absolute;
       padding: 5px;
-      border: 1px solid #fff;
+      border: 1px solid rgba(255, 181, 62, 0.1);
       flex-shrink: 0;
       box-sizing: border-box;
       user-select: none;
@@ -276,14 +156,34 @@ createdGrids(2);
     position: absolute;
     width: 200px;
     height: 200px;
-    border: 10px solid #fff;
+    border: 5px solid rgba(255, 181, 62, 0.8);
     border-radius: 50%;
     text-align: center;
-    line-height: 200px;
+    line-height: 185px;
     font-weight: bold;
     box-sizing: border-box;
+    transition: all 0.4s;
+    &::before {
+      content: "";
+      display: block;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: all 0.3s;
+      border: 2px solid rgba(255, 181, 62, 0.1);
+    }
     &:hover {
-      transform: scale(2);
+      box-shadow: 0px 0px 100px 0px rgba(255, 181, 62, 1);
+
+      &::before {
+        content: "";
+        width: 200%;
+        height: 200%;
+      }
     }
   }
 }
